@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Flappy Bird Clean</title>
+
+<style>
+
+body{
+margin:0;
+overflow:hidden;
+background:#70c5ce;
+font-family:Arial;
+}
+
+canvas{
+display:block;
+margin:auto;
+background:#70c5ce;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<canvas id="game" width="400" height="600"></canvas>
+
+<script>
+
+// canvas
+const canvas = document.getElementById("game")
+const ctx = canvas.getContext("2d")
+
+// game state
+let state = "start"
+
+// bird
+const bird = {
+x:80,
+y:250,
+radius:12,
+velocity:0,
+gravity:0.5,
+jump:-8
+}
+
+// game objects
+let pipes = []
+let score = 0
+let highScore = localStorage.getItem("flappyHigh") || 0
+
+// input
+document.addEventListener("keydown",handleInput)
+document.addEventListener("click",handleInput)
+
+function handleInput(){
+
+if(state==="start"){
+state="play"
+}
+
+else if(state==="play"){
+bird.velocity = bird.jump
+}
+
+else if(state==="over"){
+restart()
+}
+
+}
+
+// restart
+function restart(){
+
+pipes=[]
+score=0
+
+bird.y=250
+bird.velocity=0
+
+state="start"
+
+}
+
+// spawn pipe
+function spawnPipe(){
+
+const gap = 180
+const top = Math.random()*250+50
+
+pipes.push({
+x:canvas.width,
+width:70,
+top:top,
+bottom:top+gap
+})
+
+}
+
+// update game
+function update(){
+
+if(state!=="play") return
+
+bird.velocity += bird.gravity
+bird.y += bird.velocity
+
+// ground collision
+if(bird.y > canvas.height){
+state="over"
+}
+
+// pipe movement
+for(let i=pipes.length-1;i>=0;i--){
+
+let p = pipes[i]
+
+p.x -= 2
+
+// score
+if(p.x + p.width < 0){
+
+pipes.splice(i,1)
+score++
+
+if(score > highScore){
+highScore = score
+localStorage.setItem("flappyHigh",highScore)
+}
+
+}
+
+// collision
+if(
+bird.x + bird.radius > p.x &&
+bird.x - bird.radius < p.x + p.width &&
+(bird.y - bird.radius < p.top || bird.y + bird.radius > p.bottom)
+){
+state="over"
+}
+
+}
+
+}
+
+// draw background
+function drawBackground(){
+
+ctx.fillStyle="#70c5ce"
+ctx.fillRect(0,0,canvas.width,canvas.height)
+
+}
+
+// draw bird
+function drawBird(){
+
+ctx.fillStyle="yellow"
+
+ctx.beginPath()
+ctx.arc(bird.x,bird.y,bird.radius,0,Math.PI*2)
+ctx.fill()
+
+}
+
+// draw pipes
+function drawPipes(){
+
+ctx.fillStyle="green"
+
+for(let p of pipes){
+
+ctx.fillRect(p.x,0,p.width,p.top)
+ctx.fillRect(p.x,p.bottom,p.width,canvas.height)
+
+}
+
+}
+
+// draw score
+function drawScore(){
+
+ctx.fillStyle="black"
+
+ctx.font="30px Arial"
+ctx.fillText("Score: "+score,10,40)
+
+ctx.font="20px Arial"
+ctx.fillText("High: "+highScore,10,70)
+
+}
+
+// draw UI
+function drawUI(){
+
+ctx.fillStyle="black"
+
+if(state==="start"){
+
+ctx.font="40px Arial"
+ctx.fillText("Flappy Bird",90,250)
+
+ctx.font="20px Arial"
+ctx.fillText("Click or Space",120,300)
+
+}
+
+if(state==="over"){
+
+ctx.font="40px Arial"
+ctx.fillText("Game Over",100,250)
+
+ctx.font="20px Arial"
+ctx.fillText("Click to Restart",110,300)
+
+}
+
+}
+
+// game loop
+function gameLoop(){
+
+drawBackground()
+
+update()
+
+drawPipes()
+drawBird()
+drawScore()
+drawUI()
+
+requestAnimationFrame(gameLoop)
+
+}
+
+// spawn pipes every 2 seconds
+setInterval(spawnPipe,2000)
+
+// start loop
+gameLoop()
+
+</script>
+
+</body>
+</html>
